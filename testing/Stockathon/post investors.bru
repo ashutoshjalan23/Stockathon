@@ -1,0 +1,26 @@
+meta {
+  name: post investors
+  type: http
+  seq: 6
+}
+
+post {
+  url: http://localhost:5500/api/v1/investors/signup
+  body: json
+  auth: inherit
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name":"Ashutosh",
+    "password": "111"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

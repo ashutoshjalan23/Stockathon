@@ -1,7 +1,7 @@
 import { Router } from "express";
 
 import{buy, getAllStocks, getUser, stockCreate,showTransactions, sell} from '../utils/stocks.util.js';
-import { validateApiKey } from "../middleware/authorization.middleware.js";
+import { authenticateToken, validateApiKey } from "../middleware/authorization.middleware.js";
 const stocksRouter=Router();
 
 stocksRouter.post('/',stockCreate)
@@ -10,9 +10,9 @@ stocksRouter.get('/',(req,res)=> res.send({title: "GET all stocks in the market"
 
 stocksRouter.get('/allstocks',getAllStocks);
 
-stocksRouter.get('/:id/user',getUser);
+stocksRouter.get('/:id/user',authenticateToken,getUser);
 
-stocksRouter.post('/:id/buy',buy);
+stocksRouter.post('/:id/buy',authenticateToken,buy);
 
 stocksRouter.post('/:id/sell',sell);
 

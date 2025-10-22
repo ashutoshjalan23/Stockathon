@@ -1,17 +1,9 @@
 import { Router } from "express";
-import {signup} from "../utils/auth.util.js";
+import { validateApiKey } from "../middleware/authorization.middleware.js";
+import {authCreate, authLogin} from "../utils/auth.util.js";
 const authRouter= Router();
 
-authRouter.post("/sign-up",signup);
-
-authRouter.post("/sign-in",(req,res)=>{
-
-    res.send({title:"Sign-in"});
-});
-
-authRouter.post("/sign-out",(req,res)=>{
-
-    res.send({title:"Sign-out"});
-});
+authRouter.get('/',validateApiKey,authLogin);
+authRouter.post('/',validateApiKey,authCreate);
 
 export default authRouter;

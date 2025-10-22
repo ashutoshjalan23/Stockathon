@@ -4,7 +4,7 @@ import { authenticateToken } from "../middleware/authorization.middleware.js";
 
 const portfolioRouter= Router();
 
-portfolioRouter.get('/', authenticateToken,showPortfolio);
+portfolioRouter.get('/:id', authenticateToken,showPortfolio);
 
 
 export default portfolioRouter;

@@ -20,6 +20,10 @@ const investorSchema= new mongoose.Schema({
         shares:Number,
     }],
 
+    role:{
+        type:'String',
+        default:'Investor'
+    }
 
 });
 

@@ -1,47 +1,48 @@
+
+
 import mongoose from "mongoose";
-import User from "../models/user.model.js";
-import bcrypt from "../node_modules/bcrypt/bcrypt.js";
+import Auth from "../models/auth.model.js";
 
+export const authLogin= async(req,res,next)=>{
 
-export const signup= async (req,res,next) =>{
-   
-
-    const session= await mongoose.startSession();
-
-    session.startTransaction();
-
- try{    const {name,role,password}= req.body;
-
-     //CHECK IF EXISTS
-
-     const existingUser= await User.findOne({name});
-    if(existingUser){
-        const error=new Error('User already exists');
-        error.statusCode=409;
-        throw error;
+   try{
+    const {name,password}= req.body;
+    const auth= await Auth.findOne({name});
+    console.log(auth);
+    if(auth){
+     
+           if(password==auth.password){
+        res.send();
+        console.log("Admin logged in");
+    }
+    else{
+        const error= new Error("Invalid password");
+        console.error(error);
+        res.status(300).json({message:"Invalid password"});
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword= await bcrypt.hash(password,salt);
-
-
-    const newUsers= await User.create([{name,role,hashedPassword}], {session});
-
-    await session.commitTransaction();
-    session.endSession();
-
-    res.status(202).json({
-        success:true,
-        message:'USER CREATED',
-       
-        user: newUsers[0]
-    })
-
+    }else{
+        const error= new Error("Invalid");
+        console.error(error);
+        res.status(300).send("Not found");
     }
- catch(error){
+}catch(error){
+  
+    console.error(error);
 
-session.endSession();
-next(error);
- }
+    res.status(300).json({message:"Something went wrong"});
+}
+};
+
+export const authCreate=async() =>{
+const session= await mongoose.startSession();
+session.startTransaction();
+try{
+const auth= await Auth.create({session})
+console.log(auth);
+
+}catch(error){
+    console.error(error);
+}
 
 };

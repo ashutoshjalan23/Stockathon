@@ -8,7 +8,7 @@ import {PORT} from './config/env.js';
 
 import stocksRouter from './routes/stocks.routes.js';
 import authRouter from './routes/auth.routes.js';
-import tradesRouter from './routes/trades.routes.js';
+
 import companyRouter from './routes/companies.routes.js';
 import investorRouter from './routes/investor.routes.js';
 import portfolioRouter from './routes/portfolio.routes.js';
@@ -28,7 +28,6 @@ app.use('/api/v1/company',companyRouter);
 app.use( '/api/v1/auth',authRouter);
 app.use( '/api/v1/stocks',stocksRouter);
 
-app.use('/api/v1/trades',tradesRouter );
 
 app.get('/',(req,res) => {
 

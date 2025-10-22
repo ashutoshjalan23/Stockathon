@@ -1,8 +1,7 @@
 
 import { API_KEY, JWT_SECRET } from "../config/env.js";
-import jwt, { decode } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 
-import User from "../models/user.model.js";
 import Investors from "../models/investor.model.js";
 
 

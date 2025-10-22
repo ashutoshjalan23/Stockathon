@@ -1,10 +1,14 @@
 import { Router } from "express";
 
-import { companyCreator } from "../utils/company.util.js";
+import { companyCreator, companySignin } from "../utils/company.util.js";
+import { authenticateToken, validateApiKey } from "../middleware/authorization.middleware.js";
 
 
 const companyRouter= Router();
 
-companyRouter.post('/',companyCreator);
+companyRouter.post('/signup',validateApiKey,companyCreator);
+companyRouter.get('/signin',companySignin)
+companyRouter.get('/companyPortfolio',authenticateToken,)
+
 
 export default companyRouter;

@@ -19,10 +19,17 @@ export const signin=async (req,res,next) => {
         if(InvestorID){
 
         if(await bcrypt.compare(password,InvestorID.password)){
-            res.status(300).json({
+
+            const txn= await generateToken(InvestorID);
+            await session.commitTransaction();
+            session.endSession();
+
+            res.status(201).json({
                 message:"User found",
                 User: InvestorID,
+                bearer:txn
             })
+            
         }
     }
     else{
@@ -66,13 +73,11 @@ export const signup = async(req,res,next) => {
         }
         
         const Investor= await Investors.create([{name:name,password:await hashedPassword(password)}],{session});
-    const txn= await generateToken(Investor[0]._id);
-        await session.commitTransaction();
-        session.endSession();
+  
 
         res.status('201').json({
             Investor:Investor,
-            token:txn
+          
         });
 
     }catch(error){

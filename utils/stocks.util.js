@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import Stocks from "../models/stock.model.js";
 import Investors from "../models/investor.model.js";
 import Transaction from "../models/transaction.model.js";
+import bcrypt from "bcryptjs";
 import { updatePrice } from "./pricing.util.js";
 import { hashedPassword } from "./password.util.js";
 import { generateToken } from "./jwt.util.js";
@@ -15,7 +16,7 @@ try{
 
 Session.startTransaction();
 
-const {name,password,value,shares}= req.body;
+const {name,password}= req.body;
 
 const existingStock= await Stocks.findOne({name}).session(Session);
 
@@ -26,15 +27,19 @@ if(existingStock){
     throw err;
 }
     const hashed=await hashedPassword(password);
-    const newStock= await Stocks.create([{name,value,shares,hashed}], {Session});
+    
+    const newStock= await Stocks.create([{name:name,password:hashed}], {Session});
+
+   res.status('201').json({
+     stocks: newStock[0] , 
+   
+    });
+ 
+
     await Session.commitTransaction();
     Session.endSession();
    
 
-    res.status('201').json({
-     stocks: newStock[0] , 
-   
-    });
  
 
 
@@ -72,11 +77,12 @@ export const signin= async(req,res)=>{
 
         const stock= await Stocks.findOne({name});
         if(stock){
-            if(await hashedPassword(password)==stock.password){
-                const txn= await generateToken(stock.id);
+            if(await bcrypt.compare(password,stock.password)){
+                const txn= await generateToken(stock._id);
 
                 await session.commitTransaction();
                 session.endSession();
+
 
                 res.status(201).json({
                     message:"Login successful",

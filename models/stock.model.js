@@ -11,6 +11,11 @@ name:{
     requried:true,
 },
 
+password:{
+    type:'String',
+    required:true
+},
+
 value:{
     type:Number,
     default:100

@@ -3,15 +3,15 @@ import Stocks from "../models/stock.model.js";
 export const showPortfolio = async (req,res) => {
 
     try{
-    const User =req.user;
+    const Investor =req.user;
 
  
 
 let portfolio=[];
-  for(let i=0;i<User.portfolio.length;i++){
+  for(let i=0;i<Investor.portfolio.length;i++){
 
-    const stock= await Stocks.findById(User.portfolio[i].stock);
-    const shares= User.portfolio[i].shares;
+    const stock= await Stocks.findById(Investor.portfolio[i].stock);
+    const shares= Investor.portfolio[i].shares;
 
     portfolio.push({
         stock:stock,

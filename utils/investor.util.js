@@ -76,10 +76,12 @@ export const signup = async(req,res,next) => {
   
 
         res.status('201').json({
-            Investor:Investor,
+            Investor:Investor[0],
           
         });
 
+        await session.commitTransaction();
+        session.endSession();
     }catch(error){
         session.endSession();
         next(error);

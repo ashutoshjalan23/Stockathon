@@ -6,16 +6,16 @@ const stocksRouter=Router();
 
 stocksRouter.post('/',stockCreate)
 
-stocksRouter.get('/',(req,res)=> res.send({title: "GET all stocks in the market"}));
 
-stocksRouter.get('/allstocks',getAllStocks);
+
+stocksRouter.get('/allstocks',getAllStocks); //for everyone to view how stocks are doing
 
 stocksRouter.get('/:id/user',authenticateToken,getUser);
 
 stocksRouter.post('/:id/buy',authenticateToken,buy);
 
-stocksRouter.post('/:id/sell',sell);
+stocksRouter.post('/:id/sell',authenticateToken,sell);
 
-stocksRouter.get(`/transactions`,validateApiKey,showTransactions)
+stocksRouter.get(`/transactions`,validateApiKey,showTransactions) // only for admin user
 
 export default stocksRouter;

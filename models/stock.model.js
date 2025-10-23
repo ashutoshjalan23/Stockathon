@@ -12,10 +12,15 @@ name:{
 },
 
 value:{
-    type:Number
+    type:Number,
+    default:100
 },
 shares:{
     type:Number,
+    default:1000
+},
+marketCap:{
+    type:Number
 },
 Owners:[{
    investor: {type:mongoose.Schema.Types.ObjectId,ref:'Inevstors'},

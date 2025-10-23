@@ -3,6 +3,8 @@ import Stocks from "../models/stock.model.js";
 import Investors from "../models/investor.model.js";
 import Transaction from "../models/transaction.model.js";
 import { updatePrice } from "./pricing.util.js";
+import { hashedPassword } from "./password.util.js";
+import { generateToken } from "./jwt.util.js";
 
 export const stockCreate= async (req,res,next) =>{
 
@@ -13,9 +15,9 @@ try{
 
 Session.startTransaction();
 
-const {name,value,shares}= req.body;
+const {name,password,value,shares}= req.body;
 
-const existingStock= await Stocks.findOne({name});
+const existingStock= await Stocks.findOne({name}).session(Session);
 
 if(existingStock){
 
@@ -23,12 +25,15 @@ if(existingStock){
     err.status=409;
     throw err;
 }
-    const newStock= await Stocks.create([{name,value,shares}], {Session});
-        await Session.commitTransaction();
-          Session.endSession();
+    const hashed=await hashedPassword(password);
+    const newStock= await Stocks.create([{name,value,shares,hashed}], {Session});
+    await Session.commitTransaction();
+    Session.endSession();
+   
 
     res.status('201').json({
-     stocks: newStock[0]   
+     stocks: newStock[0] , 
+   
     });
  
 
@@ -58,7 +63,37 @@ export const getAllStocks= async(req,res) => {
 
 
 
-export const buy = async (req, res, next) => {
+export const signin= async(req,res)=>{
+
+    const session= await mongoose.startSession();
+    try{
+        session.startTransaction();
+        const{name,password}=req.body;
+
+        const stock= await Stocks.findOne({name});
+        if(stock){
+            if(await hashedPassword(password)==stock.password){
+                const txn= await generateToken(stock.id);
+
+                await session.commitTransaction();
+                session.endSession();
+
+                res.status(201).json({
+                    message:"Login successful",
+                    token:txn,
+                    stock:stock
+                })
+            }
+        }
+    }catch(error){
+        console.error(error);
+        res.status(300).json({message:"Error has occured"});
+    }
+};
+
+
+
+/*export const buy = async (req, res, next) => {
     const session = await mongoose.startSession();
   
     try {
@@ -88,6 +123,7 @@ export const buy = async (req, res, next) => {
             
             Investor.balance -= totalCost;
             Stock.shares -= shares;
+            Stock.Owners[0]
             
             Stock.Owners.push({
                 investor: Investor._id,  // Fixed: 'Investor' -> 'investor'
@@ -135,17 +171,131 @@ export const buy = async (req, res, next) => {
         session.endSession();
     }
 };
+*/
+
+export const buy= async(req,res)=>{
+    
+    const{investorID,stockID,shares}=req.body;
+
+    const session= await mongoose.startSession();
+
+    session.startTransaction();
+    try{
+        const Investor= await Investors.findById(investorID).session(session);
+        const Stock=await Stocks.findById(stockID).session(session);
+
+        if (!Investor || !Stock) {
+            await session.abortTransaction();
+            return res.status(404).json({ message: "Investor or Stock not found" });
+        }
+
+        const Shares=shares;
+        const pricePerShare= Stock.value;
+        const price=Shares*pricePerShare;
+        const canBuy= Investor.balance >= price && Shares<=Stock.shares;
+        const existingInvestor= Stock.Owners.find(owner=>
+            owner.investor.toString()===investorID.toString()
+        );
+
+        if(!existingInvestor){
+     
+
+           if(!canBuy){
+            await session.abortTransaction();
+
+           return res.status(400).json({ 
+                    message: "Cannot buy - insufficient balance or shares",
+                    requiredBalance: price,
+                    currentBalance: Investor.balance,
+                    requiredShares: Shares,
+                    availableShares: Stock.shares
+                });
+
+           }
+           
+           Investor.balance-=price;
+           Stock.shares-=Shares;
+
+           Stock.Owners.push({investor:Investor._id,sharesOwned:Shares});
+           Investor.portfolio.push({stock:stockID,shares:Shares});
+           updatePrice(Stock, Shares);
+
+           await Investor.save({session});
+           await Stock.save({session});
+
+          
+        }
+        else{
+        const investorIndex= Investor.portfolio.findIndex(stock=>
+            stock.stock.toString()===stockID.toString()
+        );
+        const index= Stock.Owners.findIndex(owner=>
+            owner.investor.toString()===investorID.toString()
+        );
+
+        if(!canBuy){
+              await session.abortTransaction();
+
+           return res.status(400).json({ 
+                    message: "Cannot buy - insufficient balance or shares",
+                    requiredBalance: price,
+                    currentBalance: Investor.balance,
+                    requiredShares: Shares,
+                    availableShares: Stock.shares
+                });
+        }        
+        
+        Investor.balance-=price;
+        Investor.portfolio[investorIndex].shares+=Shares;
+        Stock.Owners[index].sharesOwned+=Shares;
+        Stock.shares-=Shares;
+        
+        updatePrice(Stock,Shares);
+
+        await Investor.save({session});
+        await Stock.save({session});
 
 
+    }
 
-export const sell = async (req, res, next) => {
+     const txn= await Transaction.create([{
+            investor:investorID,
+            stock:stockID,
+            type:"BUY",
+            shares:Shares,
+            pricePerShare:pricePerShare
+           }],{session});
+
+           await session.commitTransaction();
+           await session.endSession();
+           return res.status(200).json({message:"transaction succesful",
+                                        Transaction: txn[0]
+           },
+
+           );
+           
+
+    }catch(error){
+        
+        await session.abortTransaction();
+        
+        return console.error(error);
+    }finally{
+        session.endSession();
+        
+    }
+
+};
+
+
+/*export const sell = async (req, res, next) => {
     const { investorID, stockID, shares } = req.body;
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-        const Investor = await Investors.findById(investorID);
-        const Stock = await Stocks.findById(stockID);
+        const Investor = await Investors.findById(investorID).session(session);
+        const Stock = await Stocks.findById(stockID).session(session);
         const Shares = shares;
 
         // Find if investor owns the stock in Stock.Owners
@@ -170,9 +320,9 @@ export const sell = async (req, res, next) => {
             return res.status(400).json({ message: "Stock not found in portfolio" });
         }
 
-        const canSell = portfolioItem.shares >= Shares; // Use >= instead of >
+        const stockOwner = portfolioItem.shares >= Shares; // Use >= instead of >
 
-        if (!canSell) {
+        if (!stockOwner) {
             await session.abortTransaction();
             await session.endSession();
             return res.status(400).json({ message: "Not enough shares to sell" });
@@ -190,11 +340,12 @@ export const sell = async (req, res, next) => {
         
         Investor.balance += Shares * Stock.value;
         Stock.shares += Shares;
+        Stock.Owners[0].sharesOwned-=Shares;
 
         updatePrice(Stock, -Shares);
 
-        await Investor.save();
-        await Stock.save();
+        await Investor.save({session});
+        await Stock.save({session});
 
         const txn = await Transaction.create([{
             investor: investorID,
@@ -209,7 +360,7 @@ export const sell = async (req, res, next) => {
 
         res.status(200).json({
             message: "Transaction successful",
-            data: txn,
+            data: txn[0],
             name: Investor.name, // Get from Investor, not txn
             stockname: Stock.name // Get from Stock, not txn
         });
@@ -219,7 +370,102 @@ export const sell = async (req, res, next) => {
         await session.endSession();
         next(error);
     }
-};
+};*/
+
+export const sell= async(req,res)=>{
+
+    const session= await mongoose.startSession();
+    session.startTransaction();
+    try{
+
+        const{investorID,stockID,shares}=req.body;
+
+        const Investor= await Investors.findById(investorID).session(session);
+        const Stock= await Stocks.findById(stockID).session(session);
+        const Shares= shares;
+
+        if(!Investor || !Stock){
+            await session.abortTransaction();
+            return res.status(400).json({
+                message:"Either investor or stock does not exist"
+            }); }
+
+        const stockOwner= Stock.Owners.find(owner=>
+            owner.investor.toString()===investorID.toString()
+        )
+
+        if(!stockOwner){
+            await session.abortTransaction();
+            return res.status(400).json({
+                message:"You do not own this stock"
+            });
+        }
+
+        
+
+        const ownerIndex= Stock.Owners.findIndex(owner=>
+            owner.investor.toString()===investorID.toString()
+        )
+
+        const stockIndex=Investor.portfolio.findIndex(stock=>
+            stock.stock.toString()===stockID.toString()
+        )
+
+        const canSell= Investor.portfolio[stockIndex].shares>=Shares;
+
+        if(!canSell){
+            return res.status(400).json({
+                message:"You do not have enough stocks to sell"
+            });
+        }
+
+        const pricePerShare= Stock.pricePerShare;
+        const price= pricePerShare*Shares;
+
+        Investor.balance+=price;
+        Stock.shares+=Shares;
+        Investor.portfolio[stockIndex].shares-=Shares;
+        Stock.Owners[ownerIndex].sharesOwned-=Shares;
+        
+        updatePrice(Stock,-Shares);
+
+       await Stock.save({session});
+       await Investor.save({session});
+
+
+        const txn= await Transaction.create([{
+            investor:investorID,
+            stock:stockID,
+            type:"SELL",
+            shares:Shares,
+            pricePerShare:pricePerShare
+
+        }],{session})
+
+       await session.commitTransaction();
+        
+        return res.status(200).json({
+            message:"Transaction successful",
+            token:txn[0]
+        })
+
+        
+
+        
+    }catch(error){
+        await session.abortTransaction();
+        console.error(error);
+
+        return res.status(400).json({
+            message:"Error has occured",
+            err:error.message
+
+        });
+    }finally{
+        session.endSession();
+    }
+
+}
 
 
 

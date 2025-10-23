@@ -16,7 +16,7 @@ password:{
     required:true
 },
 
-value:{
+pricePerShare:{
     type:Number,
     default:100
 },

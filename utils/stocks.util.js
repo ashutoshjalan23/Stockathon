@@ -181,7 +181,7 @@ export const signin= async(req,res)=>{
 
 export const buy= async(req,res)=>{
     
-    const{investorID,stockID,shares}=req.body;
+    const{investorID,stockID,shares}=req.body;  
 
     const session= await mongoose.startSession();
 
@@ -195,8 +195,8 @@ export const buy= async(req,res)=>{
             return res.status(404).json({ message: "Investor or Stock not found" });
         }
 
-        const Shares=shares;
-        const pricePerShare= Stock.value;
+        const Shares=parseInt(shares);
+        const pricePerShare= Stock.pricePerShare;
         const price=Shares*pricePerShare;
         const canBuy= Investor.balance >= price && Shares<=Stock.shares;
         const existingInvestor= Stock.Owners.find(owner=>
@@ -388,7 +388,7 @@ export const sell= async(req,res)=>{
 
         const Investor= await Investors.findById(investorID).session(session);
         const Stock= await Stocks.findById(stockID).session(session);
-        const Shares= shares;
+        const Shares= parseInt(shares);
 
         if(!Investor || !Stock){
             await session.abortTransaction();
@@ -429,7 +429,7 @@ export const sell= async(req,res)=>{
         const price= pricePerShare*Shares;
 
         Investor.balance+=price;
-        Stock.shares+=Shares;
+        Stock.shares+=Shares;   
         Investor.portfolio[stockIndex].shares-=Shares;
         Stock.Owners[ownerIndex].sharesOwned-=Shares;
         

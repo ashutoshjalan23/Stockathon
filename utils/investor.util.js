@@ -27,7 +27,12 @@ export const signin=async (req,res,next) => {
             res.status(200).json({
                 message:"Investor logged in successfully",
                 token: token,
-                user: { name: InvestorID.name, balance: InvestorID.balance, role: InvestorID.role }
+                user: { 
+                    _id: InvestorID._id,
+                    name: InvestorID.name, 
+                    balance: InvestorID.balance, 
+                    role: InvestorID.role 
+                }
             })
             
         } else {
@@ -87,4 +92,22 @@ export const signup = async(req,res,next) => {
         next(error);
     }
 
+}
+
+export const getAllInvestors = async(req,res) => {
+    try {
+        const investors = await Investors.find().select('name _id balance portfolio role');
+        
+        if(investors) {
+            res.status(200).json({
+                message: "Investors retrieved successfully",
+                investors: investors
+            });
+        } else {
+            res.status(404).json({ message: "No investors found" });
+        }
+    } catch(error) {
+        console.error('Error fetching investors:', error);
+        res.status(500).json({ message: "Error fetching investors", error: error.message });
+    }
 }

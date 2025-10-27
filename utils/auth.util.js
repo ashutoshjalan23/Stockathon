@@ -22,7 +22,11 @@ export const authLogin = async (req, res, next) => {
             res.status(200).json({
                 message: 'Admin logged in successfully',
                 token,
-                user: { name: auth.name, role: auth.role },
+                user: { 
+                    _id: auth._id,
+                    name: auth.name, 
+                    role: auth.role 
+                },
             });
         } else {
             // Handle invalid credentials
@@ -50,5 +54,23 @@ export const authCreate = async (req, res, next) => {
         await session.abortTransaction();
         session.endSession();
         next(error);
+    }
+};
+
+export const getAllAdmins = async (req, res) => {
+    try {
+        const admins = await Auth.find().select('name _id role');
+        
+        if(admins) {
+            res.status(200).json({
+                message: "Admins retrieved successfully",
+                admins: admins
+            });
+        } else {
+            res.status(404).json({ message: "No admins found" });
+        }
+    } catch(error) {
+        console.error('Error fetching admins:', error);
+        res.status(500).json({ message: "Error fetching admins", error: error.message });
     }
 };

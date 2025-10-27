@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const transactionSchema = new mongoose.Schema({
   investor: { type: mongoose.Schema.Types.ObjectId, ref: "Investors" },
-  startup: { type: mongoose.Schema.Types.ObjectId, ref: "Company" },
+  startup: { type: mongoose.Schema.Types.ObjectId, ref: "Stocks" },
   type: { type: String, enum: ["BUY", "SELL"], required: true },
   shares: Number,
   pricePerShare: Number,

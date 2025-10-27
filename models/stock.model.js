@@ -28,7 +28,7 @@ marketCap:{
     type:Number
 },
 Owners:[{
-   investor: {type:mongoose.Schema.Types.ObjectId,ref:'Inevstors'},
+   investor: {type:mongoose.Schema.Types.ObjectId,ref:'Investors'},
    sharesOwned:{type:Number}
 
 }],

@@ -52,7 +52,7 @@ catch(error){
 
 export const getAllStocks= async(req,res) => {
 
-    const allStocks=await Stocks.find().select('-_id');
+    const allStocks = await Stocks.find().populate('Owners.investor', 'name _id');
 
     if(allStocks){
         res.status('200').json({
@@ -87,7 +87,11 @@ export const signin= async(req,res,next)=>{
                 res.status(200).json({
                     message:"Stock logged in successfully",
                     token: token,
-                    user: { name: stock.name, role: 'Stock' }
+                    user: { 
+                        _id: stock._id,
+                        name: stock.name, 
+                        role: 'Stock' 
+                    }
                 })
             } else {
                 await session.abortTransaction();
@@ -276,7 +280,7 @@ export const buy= async(req,res)=>{
 
      const txn= await Transaction.create([{
             investor:investorID,
-            stock:stockID,
+            startup:stockID,
             type:"BUY",
             shares:Shares,
             pricePerShare:pricePerShare
@@ -451,7 +455,7 @@ export const sell= async(req,res)=>{
 
         const txn= await Transaction.create([{
             investor:investorID,
-            stock:stockID,
+            startup:stockID,
             type:"SELL",
             shares:Shares,
             pricePerShare:pricePerShare
@@ -508,7 +512,10 @@ export const getUser= async(req,res) => {
 
 export const showTransactions = async (req,res) => {
 
-    const transaction= await Transaction.find();
+    const transaction = await Transaction.find()
+        .populate('investor', 'name _id')
+        .populate('startup', 'name _id')
+        .sort({ timestamp: -1 }); // Sort by newest first
 
     if(transaction){
         res.status(200).json({

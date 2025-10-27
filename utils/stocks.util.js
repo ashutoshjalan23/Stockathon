@@ -68,7 +68,7 @@ export const getAllStocks= async(req,res) => {
 
 
 
-export const signin= async(req,res)=>{
+export const signin= async(req,res,next)=>{
 
     const session= await mongoose.startSession();
     try{
@@ -78,22 +78,32 @@ export const signin= async(req,res)=>{
         const stock= await Stocks.findOne({name});
         if(stock){
             if(await bcrypt.compare(password,stock.password)){
-                const txn= await generateToken(stock._id);
+                const token= await generateToken(stock);
 
                 await session.commitTransaction();
                 session.endSession();
 
 
-                res.status(201).json({
-                    message:"Login successful",
-                    token:txn,
-                    stock:stock
+                res.status(200).json({
+                    message:"Stock logged in successfully",
+                    token: token,
+                    user: { name: stock.name, role: 'Stock' }
                 })
+            } else {
+                await session.abortTransaction();
+                session.endSession();
+                res.status(401).json({ message: 'Invalid credentials' });
             }
+        } else {
+            await session.abortTransaction();
+            session.endSession();
+            res.status(401).json({ message: 'Stock not found' });
         }
     }catch(error){
         console.error(error);
-        res.status(300).json({message:"Error has occured"});
+        await session.abortTransaction();
+        session.endSession();
+        next(error);
     }
 };
 

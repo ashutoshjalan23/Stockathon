@@ -26,7 +26,6 @@ app.use('/api/v1/investors',investorRouter);
 app.use('/api/v1/stocks', stocksRouter);
 
 app.use( '/api/v1/auth',authRouter);
-app.use( '/api/v1/stocks',stocksRouter);
 
 
 app.get('/',(req,res) => {
@@ -39,7 +38,7 @@ res.json({message:'Hello World'});
 
 
 
-const localPORT= PORT || 3000;
+const localPORT= PORT || 3090;
 
 
 app.listen(localPORT, async ()=>{

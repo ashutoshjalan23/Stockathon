@@ -6,7 +6,7 @@ const stocksRouter=Router();
 
 stocksRouter.post('/',validateApiKey,stockCreate);
 
-stocksRouter.get('/signin',signin);
+stocksRouter.post('/signin',signin);
 
 stocksRouter.get('/allstocks',getAllStocks); //for everyone to view how stocks are doing
 

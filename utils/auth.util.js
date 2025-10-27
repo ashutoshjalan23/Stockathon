@@ -2,47 +2,53 @@
 
 import mongoose from "mongoose";
 import Auth from "../models/auth.model.js";
+import jwt from 'jsonwebtoken';
+import { JWT_SECRET } from '../config/env.js';
 
-export const authLogin= async(req,res,next)=>{
+// eslint-disable-next-line no-unused-vars
+export const authLogin = async (req, res, next) => {
+    try {
+        const { name, password } = req.query; // Use req.query for GET requests
+        const auth = await Auth.findOne({ name });
 
-   try{
-    const {name,password}= req.body;
-    const auth= await Auth.findOne({name});
-    console.log(auth);
-    if(auth){
-     
-           if(password==auth.password){
-        res.send();
-        console.log("Admin logged in");
-    }
-    else{
-        const error= new Error("Invalid password");
+        if (auth && password === auth.password) {
+            // Generate JWT
+            const token = jwt.sign({ userId: auth._id, role: auth.role }, JWT_SECRET, {
+                expiresIn: '1h',
+            });
+
+            console.log("Admin logged in");
+            // Send token and user info back
+            res.status(200).json({
+                message: 'Admin logged in successfully',
+                token,
+                user: { name: auth.name, role: auth.role },
+            });
+        } else {
+            // Handle invalid credentials
+            res.status(401).json({ message: 'Invalid credentials' });
+        }
+    } catch (error) {
         console.error(error);
-        res.status(300).json({message:"Invalid password"});
+        res.status(500).json({ message: "Something went wrong" });
     }
-
-    }else{
-        const error= new Error("Invalid");
-        console.error(error);
-        res.status(300).send("Not found");
-    }
-}catch(error){
-  
-    console.error(error);
-
-    res.status(300).json({message:"Something went wrong"});
-}
 };
 
-export const authCreate=async() =>{
-const session= await mongoose.startSession();
-session.startTransaction();
-try{
-const auth= await Auth.create({session})
-console.log(auth);
+export const authCreate = async (req, res, next) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+        const { name, password } = req.body;
+        const auth = await Auth.create([{ name, password }], { session });
+        console.log(auth);
+        await session.commitTransaction();
+        session.endSession();
+        res.status(201).json({ message: "Admin created", auth: auth[0] });
 
-}catch(error){
-    console.error(error);
-}
-
+    } catch (error) {
+        console.error(error);
+        await session.abortTransaction();
+        session.endSession();
+        next(error);
+    }
 };

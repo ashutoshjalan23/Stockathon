@@ -6,7 +6,7 @@ import {  validateApiKey } from "../middleware/authorization.middleware.js";
 
 const investorRouter=Router();
 
-investorRouter.get('/signin',signin);
+investorRouter.post('/signin',signin);
 investorRouter.post('/signup',validateApiKey,signup);
 
 export default investorRouter;

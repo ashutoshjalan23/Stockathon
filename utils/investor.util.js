@@ -20,31 +20,31 @@ export const signin=async (req,res,next) => {
 
         if(await bcrypt.compare(password,InvestorID.password)){
 
-            const txn= await generateToken(InvestorID);
+            const token= await generateToken(InvestorID);
             await session.commitTransaction();
             session.endSession();
 
-            res.status(201).json({
-                message:"User found",
-                User: InvestorID,
-                bearer:txn
+            res.status(200).json({
+                message:"Investor logged in successfully",
+                token: token,
+                user: { name: InvestorID.name, balance: InvestorID.balance, role: InvestorID.role }
             })
             
+        } else {
+            await session.abortTransaction();
+            session.endSession();
+            res.status(401).json({ message: 'Invalid credentials' });
         }
     }
     else{
-        const error= new Error("Investor not found");
-   
-        throw error;
+        await session.abortTransaction();
+        session.endSession();
+        res.status(401).json({ message: 'Investor not found' });
     }
-
-        
-    await session.commitTransaction();
-    session.endSession();
 
     }catch(error){
         console.error('user does not exist',error);
-       
+        await session.abortTransaction();
         session.endSession();
 
         next(error);
